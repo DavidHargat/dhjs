@@ -1,0 +1,119 @@
+
+<html>
+	
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	
+	<script src="dh/dh.min.js"></script>
+	
+	<script>
+	
+		var g = dh.graphics;
+		
+		g.setCanvas("canvas");
+		g.setSize(800,600);
+
+		var things = new dh.util.Container();
+		var player = new dh.block.create(100,600-64-10,64,64);
+		var spawnTimer = 0;
+		var score = 0;
+		
+		dh.input.addKeydownEvent(dh.input.keyVal.spacebar,function(){
+			things.add(Bullet(player.x+32,player.y));
+		});
+		
+		player.draw = function(){
+			g.drawRect(player.x,player.y,player.width,player.height,"#00f");
+			g.drawRect(player.x+16,player.y-32,32,32,"#00f");
+			g.drawRect(player.x+16+8,player.y-32+8,16,16,"#fff");
+			g.drawRect(player.x+16+8,player.y+48,16,16,"#000");
+		};
+		player.update = function(){
+			var speed = 8;
+			if(dh.input.a && player.x > speed){
+				player.move(-speed,0);
+			}
+			if(dh.input.d && player.x < dh.graphics.canvas.width - player.width - speed){
+				player.move(speed,0);
+			}
+		};
+		player.name = "player";
+		
+		function Enemy(x,y){
+			var ent = new dh.block.create(x,y,32,32);
+			ent.name = "enemy";
+			ent.draw = function(){
+				g.drawCircle(this.x,this.y,32,"#f00");
+			};
+			ent.update = function(){
+				this.move(0,4);
+			};
+			return ent;
+		}
+		
+		function Bullet(x,y){
+			var ent = new dh.block.create(x,y,32,32);
+			ent.name = "bullet";
+			ent.draw = function(){
+				g.drawCircle(this.x,this.y,8,"#f0f");
+			};
+			ent.update = function(){
+				this.move(0,-10);
+			for(var i=0;i<things.size();i++){
+				var thing = things.get(i);
+				if(thing.name == "enemy"){
+					if(this.touches(thing)){
+						things.remove(thing);
+						score++;
+					}
+				}
+			}
+			};
+			return ent;
+		}
+		
+		function update(){
+			for(var i=0;i<things.size();i++){
+				var thing = things.get(i);
+				thing.update();
+			}
+			for(var i=0;i<things.size();i++){
+				var thing = things.get(i);
+				if(thing.name == "enemy"){
+					if(thing.y > 600){
+						things.remove(thing);
+					}
+				}
+			}
+			if(spawnTimer > 0){
+				spawnTimer--;
+			}else{
+				var x = (Math.random() * 700) + 50;
+				var y = -32;
+				things.add(Enemy(x,y));
+				spawnTimer = 25;
+			}
+		}
+		
+		function draw(){
+			g.clear("#000");
+			for(var i=0;i<things.size();i++){
+				var thing = things.get(i);
+				thing.draw();
+			}
+			g.drawText("Score: " + score,32,42,"#fff",32);
+		}
+
+		things.add(player);
+		things.add(Enemy(100,100));
+		function loop(){
+			update();
+			draw();
+			setTimeout(loop,20);
+		}
+		
+		loop();
+	</script>
+	
+</html>

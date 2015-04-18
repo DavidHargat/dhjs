@@ -1,0 +1,65 @@
+
+<html>
+	
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	
+	<script src="dh/dh.min.js"></script>
+	
+	<script>
+		document.body.style.backgroundColor = "#000";
+		
+		// Mouse and Graphics Shorteners.
+		var g = dh.graphics;
+		var m = dh.mouse;
+		var i = dh.input; 
+		
+		var color = "#000";
+		
+		// Find canvas element
+		g.setCanvas("canvas");
+		
+		// Set canvas size.
+		g.setSize(800,600);
+		
+		// Enable mouse input.
+		dh.mouse.listen();
+
+		// Clear screen to white
+		g.clear("#fff");
+		
+		i.addKeydownEvent(i.keyVal.q,function(){
+			g.clear("#fff");
+		});
+		
+		//COLOR SELECTORS
+		i.addKeydownEvent(i.keyVal.one,function(){
+			color="#f00";
+		});
+		i.addKeydownEvent(i.keyVal.two,function(){
+			color="#0f0";
+		});
+		i.addKeydownEvent(i.keyVal.three,function(){
+			color="#00f";
+		});
+		i.addKeydownEvent(i.keyVal.four,function(){
+			color="#000";
+		});	
+		
+		function loop(){
+		
+			if(m.pressed){
+				g.drawCircle(m.x,m.y,8,color);
+			}
+			
+			g.drawRect(20,500,200,100,"#ddd");
+			g.drawText("Press q to clear",20,600-64,"#000");
+			g.drawText("Press 1 - 4 to change color",20,600-32,"#000");
+			g.drawText("Color: " + color,20,600-8,color);
+			setTimeout(loop,4);
+		}
+		loop();
+	</script>
+	
+</html>

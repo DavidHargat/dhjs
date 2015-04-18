@@ -1,0 +1,37 @@
+
+<html>
+	
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	
+	<script src="dh/dh.min.js"></script>
+	
+	<script>
+		document.body.style.backgroundColor = "#000";
+		var g = dh.graphics;
+		var r = dh.resources;
+
+		g.setCanvas("canvas");
+		g.setSize(800,600);
+		
+		//Load Example.png
+		r.load("example.png");
+
+		//Run after all resources have loaded
+		r.onLoad(function(){
+		
+			g.clear("#fff");
+			g.drawRect(32,32,100,100,"#f00");
+			g.drawRectOutline(142,32,100,100,"#000");
+			g.drawCircle(300,82,50,"#0f0");
+			g.drawCircleOutline(420,82,50,"#000");
+			g.drawLine(650,32,750,132,"#000",4);
+			g.drawText("dh.js",240,350,"#000",128);
+
+			var img = r.getImage("example.png");
+			g.drawImage(img,500,32,100,100);
+		});
+	</script>
+	
+</html>

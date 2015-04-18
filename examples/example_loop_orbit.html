@@ -1,0 +1,50 @@
+
+<html>
+	
+	<body>
+		<canvas id="canvas"></canvas>
+	</body>
+	
+	<script src="dh/dh.min.js"></script>
+	
+	<script>
+		document.body.style.backgroundColor = "#fff";
+		var g = dh.graphics;
+		var r = dh.resources;
+
+		g.setCanvas("canvas");
+		g.setSize(800,600);
+		
+		//Load Example.png
+		r.load("example.png");
+
+		
+		var time = 0;
+		
+		function draw(){
+			g.clear("#000");
+			g.drawCircle(400,300,100,"#ff0");
+			g.drawCircleOutline(400,300,100,"#fff",8);
+			var px = (Math.cos(time/50)*200) + 400;
+			var py = (Math.sin(time/50)*200) + 300;
+			g.drawCircle(px,py,16,"#00f");
+			g.drawCircleOutline(px,py,16,"#fff",2);
+		}
+		
+		function update(){
+			time++;
+		}
+		
+		function loop(){
+			update();
+			draw();
+			setTimeout(loop,20);
+		}
+			
+		//Run after all resources have loaded
+		r.onLoad(function(){
+			loop();
+		});
+	</script>
+	
+</html>

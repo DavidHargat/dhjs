@@ -1,0 +1,326 @@
+
+<html>
+	<<!-- Daves Domain -->
+	<canvas id="canvas"></canvas>
+	<script src="dh/dh.min.js"></script>t>
+	
+	<script> 
+	
+	//Messy code but demonstrates a little multiplayer game
+	
+	var g = dh.graphics;
+	g.setCanvas("canvas");
+	g.setSize(800,600);
+	g.clear("#000");
+
+	var stage = "COUNTDOWN";
+	var timer = 500;
+
+	var solidColor = "#fff";
+
+	var blocks = new dh.util.Container();
+	var ents = new dh.util.Container();
+	var removeList = [];
+	var addList = [];
+
+	function sign(num){
+		if(num >=0 ){
+			return 1;
+		}else{
+			return -1;
+		}
+	}
+
+	function Block(x,y,width,height){
+		this.solid = true;
+		this.ignore = [];
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+		this.color = "#fff";
+		this.kill = function(){
+			removeList.push(this);
+		};
+		this.touches = function(other){
+			if(this.within(other.x,other.y))return true;
+			if(this.within(other.x+other.width,other.y))return true;
+			if(this.within(other.x+other.width,other.y+other.height))return true;
+			if(this.within(other.x,other.y+other.height))return true;
+			return false;
+		};
+		this.onHit = function(other){
+		
+		};
+		this.within = function(x1,y1){
+			if(x1 > this.x &&
+			   x1 < this.x + this.width &&
+			   y1 > this.y &&
+			   y1 < this.y + this.height){return true;}
+			return false;
+		};
+		this.testPoint = function(x,y){
+			var temp = new Block(this.x+x,this.y+y,this.width,this.height);
+			var touchingBlocks = [];
+			for(var i=0;i<blocks.list.length;i++){
+				var block = blocks.list[i];
+				if(block != this){
+					if(temp.touches(block)||block.touches(temp)){
+						touchingBlocks.push(block);
+					}
+				}
+			}
+			return touchingBlocks;
+		};
+		this.canMove = function(x,y){
+			var temp = new Block(this.x+x,this.y+y,this.width,this.height);
+			for(var i=0;i<blocks.list.length;i++){
+				var block = blocks.list[i];
+				if(block != this && block.solid){
+					var shouldIgnore = false;
+					for(var j=0; j<this.ignore.length; j++){
+						var ignoreColor = this.ignore[j];
+						if(block.color == ignoreColor){
+							shouldIgnore = true;
+						}
+					}
+					if(shouldIgnore){
+						continue;
+					}
+					if(temp.touches(block)||block.touches(temp)){
+						this.onHit(block);
+						return false;
+					}
+				}
+			}
+			return true;
+		};
+		this.tryMove = function(x,y){
+			if(this.canMove(x,y)){
+				this.x += x;
+				this.y += y;
+			}else{
+				for(var i=0;i<Math.abs(x);i++){
+					var n = sign(x);
+					if(this.canMove(n,0))this.x+=n;
+				}
+				for(var i=0;i<Math.abs(y);i++){
+					var n = sign(y);
+					if(this.canMove(0,n))this.y+=n;
+				}
+				
+			}
+		};
+		this.update = function(){};
+		this.draw = function(){
+			g.drawRect(this.x,this.y,this.width,this.height,this.color);
+		};
+	}
+
+	function Particle(parent){
+		var p = new Block(parent.x,parent.y,2,2);
+		p.color = "#0f0";
+		p.solid = false;
+		p.dirX = -parent.dirX + (Math.random()-Math.random());
+		p.dirY = -parent.dirY + (Math.random()-Math.random());
+		p.fade = 250;
+		p.update = function(){
+			this.x += this.dirX;
+			this.y += this.dirY;
+			if(this.fade > 1){this.fade-=10;}else{this.kill();}
+			this.color = "rgb("+this.fade+","+this.fade+","+this.fade/10+")";
+		};
+		return p;
+	}
+
+	function Bolt(parent,dirX,dirY){
+		var b = new Block(parent.x+(parent.width/2)-4,parent.y+(parent.height/2)-2,8,8);
+			b.parent = parent;
+			b.dirX = dirX + (Math.random() - Math.random());
+			b.dirY = dirY + (Math.random() - Math.random());
+			b.color = "#ff0";
+			b.update = function(){
+				this.x += this.dirX*2;
+				this.y += this.dirY*2;
+				var blockList = this.testPoint(this.dirX,this.dirY);
+				for(var i=0;i<blockList.length;i++){
+					var b = blockList[i]
+					if(!b.solid){continue;}
+					if(b.color != solidColor){
+						if(b.color != parent.color){
+							if(b.health){
+								b.damage(5);
+								b.color = "#fff";
+							}
+							if(b.health<=0){
+								b.kill();
+							}
+							this.kill();
+							for(var i=0;i<4;i++){
+								addList.push(new Particle(this));
+							}
+						}
+					}else{
+						this.kill();
+						for(var i=0;i<4;i++){
+							addList.push(new Particle(this));
+						}
+					}
+				}
+			};
+		return b;
+	}
+
+	function Player(x,y,color){
+		var p = new Block(x,y,32,32);
+			p.solid = true;
+			p.lastX = 4;
+			p.lastY = 0;
+			p.color = color;
+			p.tmr = 10;
+			p.tmrReload = 100;
+			p.ammo = 8;
+			p.health = 100;
+			p.ignore.push("#ff0");
+			p.damage = function(amount){
+				this.health -= amount;
+				if(this.health < 0){this.health = 0;}
+			};
+			p.draw = function(){
+				g.drawRect(this.x,this.y,this.width,this.height,this.color);
+				g.drawCircle(this.x + (this.lastX*2) + (this.width/2),this.y + (this.lastY*2) + (this.height/2),4,"#000");
+			};	
+			p.shoot = function(){
+				if(this.ammo > 0 || true){
+					addList.push(new Bolt(this,this.lastX,this.lastY));
+					this.tmr=8;
+					this.ammo--;
+				}else{
+					this.reload();
+				}
+			};
+			p.reload = function(){
+				this.tmrReload = 100;
+			};
+		return p;
+	}
+
+	var player1 = new Player(64,250,"#f00");
+	player1.update = function(){
+		var s = 5;
+		this.color = "#f00";
+		if(dh.input.a){this.tryMove(-s,0);this.lastX = -s;this.lastY=0;}
+		if(dh.input.d){this.tryMove(s,0);this.lastX = s;this.lastY=0;}
+		if(dh.input.w){this.tryMove(0,-s);this.lastX = 0;this.lastY=-s;}
+		if(dh.input.s){this.tryMove(0,s);this.lastX = 0;this.lastY=s;}
+		if(dh.input.q && this.tmr <=0){this.shoot();}
+		if(this.tmr>0){this.tmr--;}
+		if(this.health<=0)this.kill();
+	};
+
+	var player2 = new Player(700,250,"#00f");
+	player2.update = function(){
+		var s = 5;
+		this.color = "#00f";
+		if(dh.input.left){this.tryMove(-s,0);this.lastX = -s;this.lastY=0;}
+		if(dh.input.right){this.tryMove(s,0);this.lastX = s;this.lastY=0;}
+		if(dh.input.up){this.tryMove(0,-s);this.lastX = 0;this.lastY=-s;}
+		if(dh.input.down){this.tryMove(0,s);this.lastX = 0;this.lastY=s;}
+		if(dh.input.m && this.tmr <=0){this.shoot();}
+		if(this.tmr>0){this.tmr--;}
+		if(this.health<=0)this.kill();
+	};
+
+	var b1 = new Block(00,10,800,10);
+	b1.color = solidColor;
+	blocks.add(b1);
+	var b2 = new Block(00,580,800,10);
+	b2.color = solidColor;
+	blocks.add(b2);
+	var b3 = new Block(10,0,10,600);
+	b3.color = solidColor;
+	blocks.add(b3);
+	var b4 = new Block(780,0,10,600);
+	b4.color = solidColor;
+	blocks.add(b4);
+
+	blocks.add(player1);
+	blocks.add(player2);
+
+	function drawBlocks(){
+		for(var i=0;i<blocks.list.length;i++){
+			var b = blocks.list[i];
+			b.draw();
+		}
+	}
+
+	function updateBlocks(){
+		for(var i=0;i<blocks.list.length;i++){
+			var b = blocks.list[i];
+			b.update();
+		}
+	}
+
+	function updateEnts(){
+		for(var i=0;i<ents.list.length;i++){
+			var b = ents.list[i];
+			b.update();
+		}
+	}
+
+	function drawEnts(){
+		for(var i=0;i<ents.list.length;i++){
+			var b = ents.list[i];
+			b.draw();
+		}
+	}
+
+	update();
+	function update(){
+		g.clear("#000");
+		if(stage == "COUNTDOWN"){
+			g.fontSize = 64;
+			g.drawText("Starting In: " + Math.round(timer/100),190,300,"#FFF",64);
+			timer-=5;
+			if(timer <= 0){
+				stage = "GAME";
+			}
+		}
+		if(stage == "GAME"){
+			g.fontSize = 32;
+		
+			updateEnts();
+			updateBlocks();
+			drawBlocks();
+			drawEnts();
+			
+			g.drawText("Health",20,540,player1.color);
+			g.drawText("controls: w,s,a,d,q",20,570,player1.color);
+			//g.drawText(":: " + player1.ammo,20+100,570,"#eee");
+			g.drawRect(20-2,580-2,200+4,16+4,"#fff");
+			g.drawRect(20,580,2*player1.health,16,player1.color);
+			
+			g.drawText("Health",580,540,player2.color);
+			g.drawText("controls: up,down,left,right,m",560,570,player2.color);
+			//g.drawText(":: " + player2.ammo,580+100,570,"#eee");
+			g.drawRect(580-2,580-2,200+4,16+4,"#fff");
+			g.drawRect(580,580,2*player2.health,16,player2.color);
+			
+			for(var i=0;i<removeList.length;i++){
+				var b = removeList[i];
+				blocks.remove(b);
+			}
+			removeList = [];
+			
+			for(var i=0;i<addList.length;i++){
+				var b = addList[i];
+				blocks.add(b);
+			}
+			addList = [];
+		}
+		setTimeout(function(){update();},20);
+	}
+	</script>
+	
+
+</html>
