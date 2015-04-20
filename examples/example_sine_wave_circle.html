@@ -1,0 +1,216 @@
+
+<html>
+
+	<!-- Style -->
+	<head>
+	<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+	<style>		
+		body{
+			background-color:#333;
+		}
+		#slider{
+			display:block;
+			margin:auto;
+			margin-bottom:1%;
+			margin-top:1%;
+			width:800px;
+
+			background-color:black;
+			color:black;
+		}
+		canvas{
+			border: 1px solid #ffffff;
+		}
+		.center{
+			font-size:32px;
+			align:center;
+			background-color:#555;
+		}
+		input[type=checkbox]
+		{
+			/* Double-sized Checkboxes */
+			-ms-transform: scale(2); /* IE */
+			-moz-transform: scale(2); /* FF */
+			-webkit-transform: scale(2); /* Safari and Chrome */
+			-o-transform: scale(2); /* Opera */
+			padding: 32px;
+			margin:32px;
+		}
+		#signature{
+			color:white;
+			font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+		}
+	</style>
+	</head>
+	
+	<body>
+		<!-- Visible Elements -->
+		<form action="">
+			<div class="center">
+			<input onchange="checkbox(value,checked)" type="checkbox" name="toggle" value="coordinate" checked>Show Coordinates</input>
+			<input onchange="checkbox(value,checked)" type="checkbox" name="toggle" value="wave" checked>Show Wave</input>
+			<input onchange="checkbox(value,checked)" type="checkbox" name="toggle" value="angle" checked>Show Angle</input>
+			<input onchange="checkbox(value,checked)" type="checkbox" name="toggle" value="axis" checked>Show Axes</input>
+			<input onchange="checkbox(value,checked)" type="checkbox" name="toggle" value="radian" checked>Show Radians</input>
+			</div>
+		</form>
+		<canvas id="canvas"></canvas>
+		<input type="range" min="0" max="360" value="0" step="15" oninput="adjust()" onmouseout="unpause()"id = "slider"/>
+		<p id="signature" >Author - David Hargat</p>
+		<p id="signature" >Email - DavidHargat@yahoo.com</p>
+	</body>
+	
+	<!-- Scripts -->
+	<script src="dh/dh.min.js"></script>
+	<script>
+		
+		// Graphics shortener
+		var g = dh.graphics;
+		
+		// Find the slider element
+		var slider = document.getElementById("slider");
+		
+		// Number to keep track of update/time
+		var t = (360 / 360)*(Math.PI*2)*50;
+		
+		// Boolean to keep track of if the app is paused
+		var pause = false;
+		
+		// A set of Booleans describing what should be DRAWN
+		var properties = {
+			coordinate: true,
+			wave: true,
+			angle: true,
+			axis: true,
+			radian: true
+		};
+		
+		// dh.js initialization
+		g.setCanvas("canvas");
+		g.setSize(800,600);
+		
+		// Update loop
+		function update(){
+		
+			// Clear the canvas
+			g.clear("#000");
+		
+			// If paused, don't add time
+			if(!pause){
+				t-=0.5;
+			}
+			
+			var radian = (t/50) / (Math.PI*2) * 360;
+			
+			slider.value = 360-radian;
+			if(radian < 0)t=(360 / 360)*(Math.PI*2)*50;;
+			
+			
+			
+			g.drawCircleOutline(200,300,100,"#f00",1);
+			//g.drawCircle(200,300,100-2,"#000");
+			
+			// Draw the GRID
+			if(properties.axis){
+				g.drawLine(200,200-20-500,200,400+20+500,"#fff");
+				g.drawLine(200-120-500,300,200+120+500,300,"#fff");
+				
+				var len = 800;
+				var clr = "#333";
+				g.drawLine(200-len,100,200+len,100,clr);
+				g.drawLine(200-len,200,200+len,200,clr);
+				g.drawLine(200-len,400,200+len,400,clr);
+				g.drawLine(200-len,500,200+len,500,clr);
+				
+				g.drawLine(100,300-len,100,300+len,clr);
+				g.drawLine(300,300-len,300,300+len,clr);
+				g.drawLine(400,300-len,400,300+len,clr);
+				g.drawLine(500,300-len,500,300+len,clr);
+				g.drawLine(600,300-len,600,300+len,clr);
+				g.drawLine(700,300-len,700,300+len,clr);
+			}
+			
+			// Calculate point rotating around the circle
+			var x = 200+(Math.cos(t/50)*100);
+			var y = 300+(Math.sin(t/50)*100);
+			
+			// Draw the green WAVE and line connecting it to circle
+			if(properties.wave){
+				drawF(100+200,300,function(x){
+					return Math.sin((x+t)/50)*100;
+				},800);
+				g.drawLine(x,300+Math.sin((0+t)/50)*100,300,300+Math.sin((0+t)/50)*100,"#f0f");
+				g.drawCircle(300,300+Math.sin((0+t)/50)*100,4,'#0ff');
+			}
+			
+			// Draw COORDINATES of point rotating around circle
+			if(properties.coordinate){
+				var txt = 
+					Math.round(Math.cos(t/50*-1)*10)/10 +
+					", " +
+					Math.round(Math.sin(t/50*-1)*10)/10;
+				g.drawText(txt,x - 60,y - 24,'#fff');
+			}
+			
+			// Draw RADIANS  text
+			if(properties.radian){
+			
+				var actual_radians = (radian*(Math.PI/180)/Math.PI);
+				
+				actual_radians = 2 - actual_radians;
+				actual_radians *= 10	
+				actual_radians = Math.round(actual_radians);
+				actual_radians /= 10;
+				
+				var txt = actual_radians + " pi";
+				g.drawText(txt, x-76 ,y+40,'#fff');
+			}
+			
+			// Draw current ANGLE
+			if(properties.angle){
+				g.drawText("a = "+Math.round(360-radian),20,50,'#fff');
+				g.drawLine(200,300,x,y,"#00f");
+			}
+			
+			// Draw equations to show how X and Y of the point are calculated
+			g.drawText("X = cos ( a )",20,50+40,'#00f');
+			g.drawText("Y = sin  ( a )",20,50+40*2,'#00f');
+			
+			// Draw the point rotating around the circle
+			g.drawCircle(x,300+Math.sin((0+t)/50)*100,4,'#00f');
+			
+			// loop
+			setTimeout(update,20);
+		}
+		
+		// Handle adjustment of the slider
+		function adjust(){
+			var v = slider.value;
+			t = ((360-v) / 360)*(Math.PI*2)*50;
+			pause = true;
+		}
+		
+		// Pause 
+		function unpause(){
+			pause = false;
+		}
+		
+		// Handle checkbox change events
+		function checkbox(key,value){
+			properties[key] = value;
+		}
+		
+		//Draw a l lines with y=callback(x)
+		function drawF(ox,oy,callback,l){
+			for(var i=0;i<l;i++){
+				var x1 = i;
+				var y1 = callback(x1);
+				var x2 = i+1;
+				var y2 = callback(x2);
+				g.drawLine(x1+ox,y1+oy,x2+ox,y2+oy,"#0f0");
+			}
+		}
+		
+		update();
+	</script>
+</html>
