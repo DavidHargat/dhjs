@@ -8,13 +8,11 @@ I have mostly just kept it for personal use as a minimal framework for my games.
 ## What is dh.js?
 
 dh.js is a small utility for quickly getting your html5 game or prototype off the ground.
+It was one of my first JS projects and thus it is very poorly structured, heavily relying on singleton pattern (bad).
 
 ### Features
 
-- Intuitive wrappers for Canvas2D
-- Basic keyboard and mouse input
-- Utility class for things like distance calculation
-- No dependencies
+2D Graphics Drawing, Basic Mouse/Keyboard Input, An Image Loader (almost useless), A Few Other Utilites
 
 ---
 
