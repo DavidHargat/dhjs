@@ -7,7 +7,7 @@ I have mostly just kept it for personal use as a minimal framework for my games.
 
 ## What is dh.js?
 
-dh.js is a small utility for quickly getting your html5 game or prototype off the ground.
+dh.js is a small utility for quickly getting html5 games or prototypes off the ground.
 It was one of my first JS projects and thus it is very poorly structured, heavily relying on singleton pattern (bad).
 
 ### Features
